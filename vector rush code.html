@@ -364,9 +364,33 @@ const screens={
     result:document.getElementById("resultScreen")
 };
 function showScreen(s){
-    Object.values(screens).forEach(x=>x.classList.remove("active"));
+    if(!s)return;
+    Object.values(screens).forEach(x=>{if(x)x.classList.remove("active")});
     s.classList.add("active");
 }
+
+// Harden the main-menu navigation.  These direct handlers are installed early so
+// a later optional UI/audio initialization problem can never leave START RUN or
+// GARAGE visually clickable but non-responsive on Safari/iOS.
+(function(){
+    const play=document.getElementById("playButton");
+    const garage=document.getElementById("characterButton");
+    const goLevels=(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
+        try{initAudio();buildLevelMenu();showScreen(screens.levels);}catch(err){
+            // Keep navigation functional even if audio is unavailable.
+            try{buildLevelMenu();showScreen(screens.levels);}catch(_){}
+        }
+    };
+    const goGarage=(e)=>{
+        if(e){e.preventDefault();e.stopPropagation();}
+        try{initAudio();buildCharacters();updateCharacterPreview();showScreen(screens.character);}catch(err){
+            try{showScreen(screens.character);}catch(_){}
+        }
+    };
+    if(play){play.onclick=goLevels;play.ontouchend=goLevels;}
+    if(garage){garage.onclick=goGarage;garage.ontouchend=goGarage;}
+})();
 
 /* =========================================================
    AUDIO
@@ -1964,12 +1988,8 @@ function buildCharacters(){
 /* =========================================================
    BUTTONS
 ========================================================= */
-document.getElementById("playButton").addEventListener("click",()=>{
-    initAudio();buildLevelMenu();showScreen(screens.levels);
-});
-document.getElementById("characterButton").addEventListener("click",()=>{
-    initAudio();buildCharacters();updateCharacterPreview();showScreen(screens.character);
-});
+// Main menu navigation is installed above with direct onclick/ontouchend handlers.
+
 document.getElementById("characterBack").addEventListener("click",()=>{showScreen(screens.main);updateMenuStats();});
 document.getElementById("levelBack").addEventListener("click",()=>{showScreen(screens.main);updateMenuStats();});
 document.getElementById("retryButton").addEventListener("click",()=>{startLevel(levelIndex);});
