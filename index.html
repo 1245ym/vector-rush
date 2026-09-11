@@ -106,18 +106,25 @@
   const gameFrame = document.getElementById("gameFrame");
   if (gameFrame) {
     try {
-      // Use a Blob URL instead of iframe.srcdoc. Safari/iOS is more reliable
-      // with Blob documents for a large self-contained game, especially when
-      // the parent page itself is opened from a local file.
+      // Load the embedded game directly inside the iframe. This keeps the
+      // one-file build self-contained when deployed on GitHub Pages.
       const binary = atob(GAME_B64);
       const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
       const gameHtml = new TextDecoder("utf-8").decode(bytes);
-      const blob = new Blob([gameHtml], {type:"text/html;charset=utf-8"});
-      const gameUrl = URL.createObjectURL(blob);
-      gameFrame.src = gameUrl;
+
+      // Primary path: load the embedded game directly as iframe srcdoc.
+      // This is the most reliable setup when the whole site is a single
+      // GitHub Pages HTML file.
+      gameFrame.srcdoc = gameHtml;
       gameFrame.addEventListener("load", () => {
         gameFrame.style.background = "#020208";
       }, {once:true});
+
+      // Keep a Blob fallback for browsers where srcdoc is unavailable.
+      if (!("srcdoc" in gameFrame)) {
+        const blob = new Blob([gameHtml], {type:"text/html;charset=utf-8"});
+        gameFrame.src = URL.createObjectURL(blob);
+      }
     } catch (e) {
       console.error("Vector Rush game failed to load:", e);
       // Final fallback for browsers that do not expose Blob URLs.
