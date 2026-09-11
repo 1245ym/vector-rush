@@ -388,8 +388,16 @@ function showScreen(s){
             try{showScreen(screens.character);}catch(_){}
         }
     };
-    if(play){play.onclick=goLevels;play.ontouchend=goLevels;}
-    if(garage){garage.onclick=goGarage;garage.ontouchend=goGarage;}
+    if(play){
+        play.addEventListener("pointerup",goLevels,{passive:false});
+        play.addEventListener("click",goLevels);
+        play.addEventListener("touchend",goLevels,{passive:false});
+    }
+    if(garage){
+        garage.addEventListener("pointerup",goGarage,{passive:false});
+        garage.addEventListener("click",goGarage);
+        garage.addEventListener("touchend",goGarage,{passive:false});
+    }
 })();
 
 /* =========================================================
@@ -1988,12 +1996,27 @@ function buildCharacters(){
 /* =========================================================
    BUTTONS
 ========================================================= */
-// Main menu navigation is installed above with direct onclick/ontouchend handlers.
+// UI controls are intentionally handled independently from gameplay input so
+// pointer/touch events cannot be swallowed on iPhone, Android or desktop.
+function uiAction(el, fn){
+    if(!el)return;
+    let last=0;
+    const run=e=>{
+        if(e){e.preventDefault();e.stopPropagation();}
+        const now=performance.now();
+        if(now-last<250)return;
+        last=now;
+        fn(e);
+    };
+    el.addEventListener("pointerup",run,{passive:false});
+    el.addEventListener("click",run);
+    el.addEventListener("touchend",run,{passive:false});
+}
 
-document.getElementById("characterBack").addEventListener("click",()=>{showScreen(screens.main);updateMenuStats();});
-document.getElementById("levelBack").addEventListener("click",()=>{showScreen(screens.main);updateMenuStats();});
-document.getElementById("retryButton").addEventListener("click",()=>{startLevel(levelIndex);});
-document.getElementById("resultMenuButton").addEventListener("click",()=>{
+uiAction(document.getElementById("characterBack"),()=>{showScreen(screens.main);updateMenuStats();});
+uiAction(document.getElementById("levelBack"),()=>{showScreen(screens.main);updateMenuStats();});
+uiAction(document.getElementById("retryButton"),()=>{startLevel(levelIndex);});
+uiAction(document.getElementById("resultMenuButton"),()=>{
     stopMusic();
     state="menu";
     level=null;
@@ -2005,7 +2028,7 @@ document.getElementById("resultMenuButton").addEventListener("click",()=>{
     buildLevelMenu();
     showScreen(screens.main);
 });
-document.getElementById("nextButton").addEventListener("click",()=>{
+uiAction(document.getElementById("nextButton"),()=>{
     if(levelIndex+1<LEVELS.length)startLevel(levelIndex+1);
 });
 function pauseGame(){
@@ -2050,18 +2073,18 @@ function leaveRunToMenu(){
     buildLevelMenu();
     showScreen(screens.main);
 }
-document.getElementById("pauseBtn").addEventListener("click",e=>{
+uiAction(document.getElementById("pauseBtn"),e=>{
     e.preventDefault();
     e.stopPropagation();
     pauseGame();
 });
-document.getElementById("resumeButton").addEventListener("click",resumeGame);
-document.getElementById("pauseMenuButton").addEventListener("click",leaveRunToMenu);
-document.getElementById("speedDown").addEventListener("click",()=>{
+uiAction(document.getElementById("resumeButton"),resumeGame);
+uiAction(document.getElementById("pauseMenuButton"),leaveRunToMenu);
+uiAction(document.getElementById("speedDown"),()=>{
     gameSpeedMultiplier=Math.max(.5,Math.round((gameSpeedMultiplier-.1)*10)/10);
     document.getElementById("pauseSpeedValue").textContent=gameSpeedMultiplier.toFixed(1)+"×";
 });
-document.getElementById("speedUp").addEventListener("click",()=>{
+uiAction(document.getElementById("speedUp"),()=>{
     gameSpeedMultiplier=Math.min(2,Math.round((gameSpeedMultiplier+.1)*10)/10);
     document.getElementById("pauseSpeedValue").textContent=gameSpeedMultiplier.toFixed(1)+"×";
 });
@@ -2074,7 +2097,14 @@ document.getElementById("musicToggle").addEventListener("change",e=>setMusicEnab
 /* =========================================================
    INPUT
 ========================================================= */
+function isUIControlTarget(target){
+    if(!target || !target.closest) return false;
+    return !!target.closest('button, .level-card, .character-card, input, label, .screen');
+}
 function inputDown(e){
+    // Never let the gameplay input layer swallow menu/UI taps. On iOS Safari,
+    // preventDefault() on a pointerdown can cancel the synthetic click entirely.
+    if(e && isUIControlTarget(e.target)) return;
     if(e)e.preventDefault();
     initAudio();
 
@@ -2106,6 +2136,9 @@ function inputUp(e){
 let activePointerId=null;
 function pointerDown(e){
     if(e.pointerType!=="mouse" && e.isPrimary===false)return;
+    // UI controls have their own pointer/click handlers; do not route them
+    // through gameplay input. This is critical for Safari/iPhone.
+    if(isUIControlTarget(e.target)) return;
     activePointerId=e.pointerId;
     inputDown(e);
 }
