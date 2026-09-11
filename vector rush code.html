@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Vector Rush</title>
 <style>
 :root{--cyan:#00e5ff;--purple:#a855f7;--gold:#ffd700;--danger:#ff3355;}
@@ -23,7 +23,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit
 .small-info{position:absolute;bottom:22px;color:#777;font-size:.72rem;letter-spacing:1px;text-align:center;}
 .panel{width:min(900px,94vw);max-height:88vh;overflow:auto;padding:25px 15px;}
 .panel-title{text-align:center;color:white;font-size:clamp(1.5rem,4vw,2.5rem);font-weight:1000;letter-spacing:3px;margin-bottom:7px;text-shadow:0 0 20px rgba(168,85,247,.5);}\n.panel-subtitle{text-align:center;color:#8f86aa;font-size:.68rem;letter-spacing:1.2px;margin-bottom:20px;}
-.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.level-grid{display:grid;touch-action:manipulation;-webkit-user-select:none;user-select:none;grid-template-columns:repeat(5,1fr);gap:14px;}
 @media(max-width:700px){.level-grid{grid-template-columns:repeat(2,1fr);}.pause-controls{grid-template-columns:1fr;}}
 .level-card{min-height:145px;border-radius:15px;border:2px solid rgba(168,85,247,.25);position:relative;overflow:hidden;cursor:pointer;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;transition:.18s;background:#15152d;}
 .level-card:hover{transform:translateY(-5px) scale(1.015);border-color:#a855f7;box-shadow:0 0 25px rgba(168,85,247,.4);}\n.level-card::before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,rgba(255,255,255,.08),transparent 35%);pointer-events:none;}\n.level-card::after{content:"PLAY";position:absolute;right:8px;top:8px;font-size:.46rem;font-weight:1000;letter-spacing:1px;color:rgba(255,255,255,.45);opacity:0;transition:.18s;}\n.level-card:hover::after{opacity:1;}
@@ -98,19 +98,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit
 #starsTotal{position:absolute;right:20px;bottom:18px;color:#ffd700;z-index:30;font-size:.85rem;font-weight:900;text-shadow:0 0 10px rgba(255,215,0,.6);}
 
 /* Cross-device/mobile polish */
-html,body,#game{min-height:100%;height:100%;height:100dvh;}
-body{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;overscroll-behavior:none;}
-#game{padding:0;}
-canvas{touch-action:none;-webkit-user-select:none;user-select:none;image-rendering:auto;}
-/* Preserve the authored 16:9 playfield on every aspect ratio. The canvas is contained
-   rather than stretched, so gameplay geometry stays identical on phones/tablets/desktop. */
-@media (min-aspect-ratio:16/9){canvas{width:auto;height:100%;left:50%;right:auto;transform:translateX(-50%);}}
-@media (max-aspect-ratio:16/9){canvas{width:100%;height:auto;top:50%;bottom:auto;transform:translateY(-50%);}}
-
+html,body{width:100%;height:100%;min-height:100%;overflow:hidden;background:#020208;}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{height:100dvh;min-height:100svh;padding:0;margin:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;overscroll-behavior:none;}
+#game{position:relative;width:min(100vw,177.7778dvh);height:min(100dvh,56.25vw);aspect-ratio:16/9;max-width:100vw;max-height:100dvh;overflow:hidden;flex:0 0 auto;padding:0;border-radius:0;}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;image-rendering:auto;}
 button,.level-card,.character-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.level-grid{touch-action:manipulation;-webkit-user-select:none;user-select:none;}
 @media (max-width:700px){
- .screen{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));}
- .panel{width:100%;max-height:94dvh;padding:16px 10px 22px;}
+ .screen{padding:12px;}
+ .panel{width:94%;max-height:94%;padding:16px 10px 22px;}
  .panel-title{font-size:clamp(1.35rem,7vw,2rem);margin-bottom:5px;}
  .panel-subtitle{margin-bottom:13px;}
  .level-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
@@ -120,13 +117,13 @@ button,.level-card,.character-card{touch-action:manipulation;-webkit-tap-highlig
  .main-buttons{width:min(360px,88vw);gap:9px}
  .menu-btn{padding:13px 18px;font-size:.92rem;min-height:46px}
  .control-chip{font-size:.52rem;padding:6px 7px}
- #hud{top:max(8px,env(safe-area-inset-top));padding:0 10px;font-size:.72rem}
+ #hud{top:10px;padding:0 10px;font-size:.72rem}
  .hud-right{gap:7px}.hud-left{font-size:.66rem}.pause-panel{width:min(470px,94vw);padding:20px 15px}
  #progress{top:34px;width:min(440px,72vw);height:4px}
  #pauseBtn{min-width:42px;min-height:38px;padding:6px 11px;font-size:1rem}
  .pause-actions{flex-direction:column}.pause-actions .menu-btn{min-height:45px}
  .pause-controls{grid-template-columns:1fr 1fr}
- .small-info{bottom:max(12px,env(safe-area-inset-bottom));font-size:.62rem}
+ .small-info{bottom:12px;font-size:.62rem}
 }
 @media (max-width:390px){
  .level-grid{gap:7px}.level-card{min-height:116px}.pause-controls{grid-template-columns:1fr}
@@ -1902,12 +1899,37 @@ function buildLevelMenu(){
             <div class="level-stars">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</div>
             <div class="level-tag">${stars===3?"PERFECT":stars===2?"CLEARED":"READY"}</div>
         `;
-        card.addEventListener("click",()=>startLevel(i));
+        card.dataset.levelIndex=String(i);
         grid.appendChild(card);
     });
     document.getElementById("starsTotal").textContent=`⭐ ${totalStars()}/15`;
     updateMenuStats();
 }
+// Robust level selection for iOS Safari, Android Chrome, desktop mouse and stylus.
+// Delegation also survives menu rebuilding without leaving stale handlers behind.
+(function(){
+    const grid=document.getElementById("levelGrid");
+    let lastLevelTap=-1,lastLevelTapAt=0;
+    function activateLevel(target){
+        const card=target.closest && target.closest(".level-card");
+        if(!card||!grid.contains(card))return;
+        const i=Number(card.dataset.levelIndex);
+        if(!Number.isInteger(i)||i<0||i>=LEVELS.length)return;
+        const now=performance.now();
+        if(lastLevelTap===i && now-lastLevelTapAt<500)return;
+        lastLevelTap=i;lastLevelTapAt=now;
+        initAudio();
+        startLevel(i);
+    }
+    if(window.PointerEvent){
+        grid.addEventListener("pointerup",e=>{if(e.isPrimary!==false){e.preventDefault();activateLevel(e.target);}}, {passive:false});
+        grid.addEventListener("click",e=>activateLevel(e.target));
+    }else{
+        grid.addEventListener("touchend",e=>{e.preventDefault();activateLevel(e.target);},{passive:false});
+        grid.addEventListener("click",e=>activateLevel(e.target));
+    }
+})();
+
 function updateCharacterPreview(){
     const c=CHARACTERS[save.character]||CHARACTERS[0];
     const cube=document.getElementById("previewCube");
@@ -2073,14 +2095,14 @@ function pointerUp(e){
     inputUp(e);
 }
 if(window.PointerEvent){
-    canvas.addEventListener("pointerdown",pointerDown,{passive:false});
+    document.getElementById("game").addEventListener("pointerdown",pointerDown,{passive:false});
     window.addEventListener("pointerup",pointerUp,{passive:false});
     window.addEventListener("pointercancel",pointerUp,{passive:false});
     window.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")inputUp(e);},{passive:false});
 }else{
-    canvas.addEventListener("mousedown",inputDown);
+    document.getElementById("game").addEventListener("mousedown",inputDown);
     window.addEventListener("mouseup",inputUp);
-    canvas.addEventListener("touchstart",inputDown,{passive:false});
+    document.getElementById("game").addEventListener("touchstart",inputDown,{passive:false});
     window.addEventListener("touchend",inputUp,{passive:false});
     window.addEventListener("touchcancel",inputUp,{passive:false});
 }
@@ -2130,6 +2152,11 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 canvas.addEventListener("contextmenu",e=>e.preventDefault());
+// UI taps must never leak through to gameplay input on touch devices.
+["mainMenu","levelScreen","characterScreen","pauseScreen","resultScreen"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener("pointerdown",e=>e.stopPropagation(),{passive:false});
+});
 
 /* =========================================================
    RUNTIME SAFETY
