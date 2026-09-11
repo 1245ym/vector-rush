@@ -8,9 +8,9 @@
 :root{--cyan:#00e5ff;--purple:#a855f7;--gold:#ffd700;--danger:#ff3355;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#020208;font-family:Arial,Helvetica,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;}
-body{display:flex;justify-content:center;align-items:center;}
-#game{position:relative;width:100vw;height:100vh;overflow:hidden;}
-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+body{display:flex;justify-content:center;align-items:center;min-height:100dvh;background:#020208;}
+#game{position:relative;width:100vw;height:100dvh;overflow:hidden;}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;object-position:center center;background:#020208;}
 .screen{position:absolute;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 38%,rgba(74,26,125,.24),rgba(0,0,0,.72) 68%),rgba(0,0,0,.38);backdrop-filter:blur(5px);animation:screenIn .22s ease-out;}\n@keyframes screenIn{from{opacity:0;transform:scale(1.012)}to{opacity:1;transform:scale(1)}}
 .screen.active{display:flex;}
 .menu-kicker{font-size:.62rem;font-weight:1000;letter-spacing:5px;color:#00e5ff;margin-bottom:8px;text-shadow:0 0 14px rgba(0,229,255,.8);}\n.logo{font-size:clamp(2.2rem,8vw,5rem);font-weight:1000;letter-spacing:4px;color:white;text-align:center;text-shadow:0 0 15px #a855f7,0 0 45px #a855f7,0 0 90px rgba(168,85,247,.5);animation:logoPulse 2s infinite ease-in-out;}
@@ -100,8 +100,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 /* Cross-device/mobile polish */
 html,body,#game{min-height:100%;height:100%;height:100dvh;}
 body{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;overscroll-behavior:none;}
-#game{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-canvas{touch-action:none;-webkit-user-select:none;user-select:none;}
+#game{padding:0;}
+canvas{touch-action:none;-webkit-user-select:none;user-select:none;image-rendering:auto;}
+/* Preserve the authored 16:9 playfield on every aspect ratio. The canvas is contained
+   rather than stretched, so gameplay geometry stays identical on phones/tablets/desktop. */
+@media (min-aspect-ratio:16/9){canvas{width:auto;height:100%;left:50%;right:auto;transform:translateX(-50%);}}
+@media (max-aspect-ratio:16/9){canvas{width:100%;height:auto;top:50%;bottom:auto;transform:translateY(-50%);}}
+
 button,.level-card,.character-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 @media (max-width:700px){
  .screen{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));}
@@ -126,6 +131,10 @@ button,.level-card,.character-card{touch-action:manipulation;-webkit-tap-highlig
 @media (max-width:390px){
  .level-grid{gap:7px}.level-card{min-height:116px}.pause-controls{grid-template-columns:1fr}
  .logo{letter-spacing:2px}.subtitle{letter-spacing:4px}
+}
+@media (max-width:700px) and (orientation:portrait){
+ .hud-left{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ #progress{top:37px;}
 }
 @media (orientation:landscape) and (max-height:500px){
  .panel{max-height:96dvh;padding:8px 10px}.level-card{min-height:102px}
@@ -2076,6 +2085,11 @@ if(window.PointerEvent){
     window.addEventListener("touchcancel",inputUp,{passive:false});
 }
 
+// Mobile Safari/Chrome can otherwise interpret multi-touch as browser gestures.
+window.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
+window.addEventListener("gesturechange",e=>e.preventDefault(),{passive:false});
+window.addEventListener("gestureend",e=>e.preventDefault(),{passive:false});
+
 window.addEventListener("keydown",e=>{
     if(e.code==="Space"||e.code==="ArrowUp"||e.code==="KeyW"){
         e.preventDefault();
@@ -2147,11 +2161,19 @@ function validateLevelGeometry(){
 // Mobile browser viewport changes (address bar/orientation) should never resize the
 // logical game world. CSS scales the fixed 960x540 playfield without changing physics.
 function handleViewportChange(){
-    document.documentElement.style.setProperty("--vh",`${window.innerHeight*0.01}px`);
+    const vv=window.visualViewport;
+    const h=vv?vv.height:window.innerHeight;
+    const w=vv?vv.width:window.innerWidth;
+    document.documentElement.style.setProperty("--vh",`${h*0.01}px`);
+    document.documentElement.style.setProperty("--vw",`${w*0.01}px`);
+    // Keep mobile browser chrome from causing a visible one-frame layout jump.
+    document.documentElement.style.setProperty("--game-width",`${w}px`);
+    document.documentElement.style.setProperty("--game-height",`${h}px`);
     if(document.activeElement && document.activeElement.tagName==="BUTTON") document.activeElement.blur();
 }
 window.addEventListener("resize",handleViewportChange,{passive:true});
 window.addEventListener("orientationchange",()=>setTimeout(handleViewportChange,120),{passive:true});
+if(window.visualViewport) window.visualViewport.addEventListener("resize",handleViewportChange,{passive:true});
 handleViewportChange();
 
 /* =========================================================
