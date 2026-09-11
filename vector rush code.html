@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>Vector Rush</title>
 <style>
 :root{--cyan:#00e5ff;--purple:#a855f7;--gold:#ffd700;--danger:#ff3355;}
@@ -96,6 +96,42 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .back{background:#4c1d95}
 .next{background:#00b956}
 #starsTotal{position:absolute;right:20px;bottom:18px;color:#ffd700;z-index:30;font-size:.85rem;font-weight:900;text-shadow:0 0 10px rgba(255,215,0,.6);}
+
+/* Cross-device/mobile polish */
+html,body,#game{min-height:100%;height:100%;height:100dvh;}
+body{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;overscroll-behavior:none;}
+#game{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+canvas{touch-action:none;-webkit-user-select:none;user-select:none;}
+button,.level-card,.character-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+@media (max-width:700px){
+ .screen{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));}
+ .panel{width:100%;max-height:94dvh;padding:16px 10px 22px;}
+ .panel-title{font-size:clamp(1.35rem,7vw,2rem);margin-bottom:5px;}
+ .panel-subtitle{margin-bottom:13px;}
+ .level-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+ .level-card{min-height:128px;padding:9px;border-radius:13px;}
+ .level-icon{font-size:1.55rem}.level-number{font-size:1.6rem}.level-name{font-size:.58rem}
+ .level-tag{font-size:.43rem}.level-stars{font-size:.75rem;margin-top:5px}
+ .main-buttons{width:min(360px,88vw);gap:9px}
+ .menu-btn{padding:13px 18px;font-size:.92rem;min-height:46px}
+ .control-chip{font-size:.52rem;padding:6px 7px}
+ #hud{top:max(8px,env(safe-area-inset-top));padding:0 10px;font-size:.72rem}
+ .hud-right{gap:7px}.hud-left{font-size:.66rem}.pause-panel{width:min(470px,94vw);padding:20px 15px}
+ #progress{top:34px;width:min(440px,72vw);height:4px}
+ #pauseBtn{min-width:42px;min-height:38px;padding:6px 11px;font-size:1rem}
+ .pause-actions{flex-direction:column}.pause-actions .menu-btn{min-height:45px}
+ .pause-controls{grid-template-columns:1fr 1fr}
+ .small-info{bottom:max(12px,env(safe-area-inset-bottom));font-size:.62rem}
+}
+@media (max-width:390px){
+ .level-grid{gap:7px}.level-card{min-height:116px}.pause-controls{grid-template-columns:1fr}
+ .logo{letter-spacing:2px}.subtitle{letter-spacing:4px}
+}
+@media (orientation:landscape) and (max-height:500px){
+ .panel{max-height:96dvh;padding:8px 10px}.level-card{min-height:102px}
+ .main-buttons{gap:6px}.menu-btn{padding:9px 18px;min-height:40px}
+ .character-preview{width:120px;height:120px;margin:5px 0 12px}
+}
 </style>
 </head>
 <body>
@@ -332,7 +368,10 @@ function showScreen(s){
 let audio=null;
 function initAudio(){
     if(!audio){try{audio=new(window.AudioContext||window.webkitAudioContext)();}catch{}}
-    if(audio&&audio.state==="suspended")audio.resume();
+    if(audio&&audio.state==="suspended"){
+        const r=audio.resume();
+        if(r&&typeof r.catch==="function")r.catch(()=>{});
+    }
 }
 function tone(f,d,t="square",v=.08){
     if(!audio)return;
@@ -2012,11 +2051,30 @@ function inputUp(e){
     jumpBuffer=0;
 }
 
-canvas.addEventListener("mousedown",inputDown);
-window.addEventListener("mouseup",inputUp);
-canvas.addEventListener("touchstart",inputDown,{passive:false});
-window.addEventListener("touchend",inputUp,{passive:false});
-window.addEventListener("touchcancel",inputUp,{passive:false});
+// One input system for mouse, touch, pen and modern mobile browsers.
+let activePointerId=null;
+function pointerDown(e){
+    if(e.pointerType!=="mouse" && e.isPrimary===false)return;
+    activePointerId=e.pointerId;
+    inputDown(e);
+}
+function pointerUp(e){
+    if(activePointerId!==null && e.pointerId!==activePointerId)return;
+    activePointerId=null;
+    inputUp(e);
+}
+if(window.PointerEvent){
+    canvas.addEventListener("pointerdown",pointerDown,{passive:false});
+    window.addEventListener("pointerup",pointerUp,{passive:false});
+    window.addEventListener("pointercancel",pointerUp,{passive:false});
+    window.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")inputUp(e);},{passive:false});
+}else{
+    canvas.addEventListener("mousedown",inputDown);
+    window.addEventListener("mouseup",inputUp);
+    canvas.addEventListener("touchstart",inputDown,{passive:false});
+    window.addEventListener("touchend",inputUp,{passive:false});
+    window.addEventListener("touchcancel",inputUp,{passive:false});
+}
 
 window.addEventListener("keydown",e=>{
     if(e.code==="Space"||e.code==="ArrowUp"||e.code==="KeyW"){
@@ -2085,6 +2143,16 @@ function validateLevelGeometry(){
     }
     obstacles.sort((a,b)=>a.x-b.x);
 }
+
+// Mobile browser viewport changes (address bar/orientation) should never resize the
+// logical game world. CSS scales the fixed 960x540 playfield without changing physics.
+function handleViewportChange(){
+    document.documentElement.style.setProperty("--vh",`${window.innerHeight*0.01}px`);
+    if(document.activeElement && document.activeElement.tagName==="BUTTON") document.activeElement.blur();
+}
+window.addEventListener("resize",handleViewportChange,{passive:true});
+window.addEventListener("orientationchange",()=>setTimeout(handleViewportChange,120),{passive:true});
+handleViewportChange();
 
 /* =========================================================
    INIT
